@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>R-Snake Perfect</title>
+    <style>
+        body { 
+            background: #000; color: #39ff14; font-family: 'Courier New', monospace; 
+            display: flex; flex-direction: column; align-items: center; 
+            margin: 0; padding-top: 10px; overflow: hidden; height: 100vh;
+        }
+        canvas { 
+            background: #050505; border: 4px solid #222; 
+            width: 300px; height: 300px; border-radius: 10px;
+        }
+        #score-board { font-size: 22px; margin-bottom: 5px; }
+        .controls { display: grid; grid-template-columns: repeat(3, 75px); gap: 10px; margin-top: 20px; }
+        .btn {
+            width: 75px; height: 75px; background: #111; border: 2px solid #333;
+            color: #fff; font-size: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active { background: #39ff14; color: #000; }
+        .up { grid-column: 2; } .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+    </style>
+</head>
+<body>
+
+    <div id="score-board">SCORE: <span id="s">0</span></div>
+    <canvas id="c" width="400" height="400"></canvas>
+
+    <div class="controls">
+        <div class="btn up" onpointerdown="changeDir('U')">▲</div>
+        <div class="btn left" onpointerdown="changeDir('L')">◀</div>
+        <div class="btn right" onpointerdown="changeDir('R')">▶</div>
+        <div class="btn down" onpointerdown="changeDir('D')">▼</div>
+    </div>
+
+<script>
+    const cvs = document.getElementById("c"), ctx = cvs.getContext("2d");
+    let b = 20, score = 0, dir = "R", nextDir = "R", musicStarted = false;
+    // Iloncha boshlang'ich holati (bosh va tana orasida masofa bor)
+    let snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
+    let food = {x: 100, y: 100}, bonus = null;
+
+    // Musiqa
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function startMusic() {
+        if (musicStarted) return; musicStarted = true;
+        const notes = [261.63, 329.63, 392.00, 523.25];
+        let i = 0;
+        setInterval(() => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.value = notes[i % notes.length];
+            osc.type = 'triangle';
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+            i++;
+        }, 800);
+    }
+
+    function changeDir(newDir) {
+        startMusic();
+        if(newDir == "U" && dir != "D") nextDir = "U";
+        if(newDir == "D" && dir != "U") nextDir = "D";
+        if(newDir == "L" && dir != "R") nextDir = "L";
+        if(newDir == "R" && dir != "L") nextDir = "R";
+    }
+
+    function draw() {
+        dir = nextDir;
+        ctx.fillStyle = "#000"; ctx.fillRect(0,0,400,400);
+
+        // Ilonchani chizish
+        snake.forEach((p, i) => {
+            ctx.fillStyle = i==0 ? "#39ff14" : "#145a14";
+            ctx.fillRect(p.x, p.y, b-1, b-1);
+        });
+
+        // Oddiy ovqat
+        ctx.fillStyle = "red";
+        ctx.fillRect(food.x, food.y, b-2, b-2);
+
+        // Bonus (5 sekund)
+        if(bonus) {
+            ctx.fillStyle = "violet";
+            ctx.fillRect(bonus.x, bonus.y, b, b);
+        }
+
+        let head = {x: snake[0].x, y: snake[0].y};
+        if(dir=="L") head.x -= b; if(dir=="U") head.y -= b;
+        if(dir=="R") head.x += b; if(dir=="D") head.y += b;
+
+        // Devordan o'tish (Warp)
+        if(head.x < 0) head.x = 380; else if(head.x >= 400) head.x = 0;
+        if(head.y < 0) head.y = 380; else if(head.y >= 400) head.y = 0;
+
+        // --- TO'QNASHUVNI TEKSHIRISH (MUHIM QISMI) ---
+        // Siklni 1 dan boshlaymiz, shunda boshi bo'yniga tegsa o'lmaydi
+        for(let i = 1; i < snake.length; i++) {
+            if(head.x === snake[i].x && head.y === snake[i].y) {
+                alert("GAME OVER! Score: " + score);
+                location.reload();
+                return;
+            }
+        }
+
+        if(head.x == food.x && head.y == food.y) {
+            score++; document.getElementById("s").innerText = score;
+            food = {x: Math.floor(Math.random()*20)*b, y: Math.floor(Math.random()*20)*b};
+            if(Math.random() < 0.2) {
+                bonus = {x: Math.floor(Math.random()*20)*b, y: Math.floor(Math.random()*20)*b};
+                setTimeout(() => bonus = null, 5000);
+            }
+        } else if(bonus && head.x == bonus.x && head.y == bonus.y) {
+            score += 3; document.getElementById("s").innerText = score;
+            bonus = null; snake.push({}, {}); 
+        } else {
+            snake.pop();
+        }
+
+        snake.unshift(head);
+    }
+
+    setInterval(draw, 320); // Tezlik juda qulay (sekin)
+</script>
+</body>
+</html>
