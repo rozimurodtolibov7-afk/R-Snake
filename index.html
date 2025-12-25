@@ -3,250 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>R-SANTA: Deluxe Edition</title>
+    <title>R-SANTA: New Year Edition</title>
     <style>
-        :root { --red: #ff3333; --gold: #ffd700; --green: #2ecc71; --dark: #010811; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--dark); color: white; margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
-
-        canvas#snowCanvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1; }
-
-        #top-bar { position: fixed; top: 15px; width: 100%; display: flex; justify-content: center; z-index: 1000; }
-        .rc-panel { 
-            background: rgba(255,255,255,0.1); padding: 10px 30px; border-radius: 50px; 
-            border: 2px solid var(--gold); font-size: 26px; font-weight: bold; color: var(--gold);
-            backdrop-filter: blur(10px); box-shadow: 0 0 20px rgba(255,215,0,0.4);
-        }
-
-        #stage { height: 55vh; display: flex; align-items: center; justify-content: center; position: relative; z-index: 5; }
-        .tree-svg { width: 320px; filter: drop-shadow(0 0 25px var(--green)); }
-        .toy-on-tree { position: absolute; font-size: 50px; cursor: grab; z-index: 100; user-select: none; }
-
-        /* Notification System */
-        #notify-pop { 
-            position: fixed; top: -120px; left: 50%; transform: translateX(-50%);
-            background: rgba(255,255,255,0.15); backdrop-filter: blur(15px);
-            padding: 20px 40px; border-radius: 30px; border: 2px solid var(--gold);
-            transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 7000; text-align: center;
-        }
-        #notify-pop.active { top: 100px; }
-        #notify-pop h1 { font-size: 60px; margin: 0; }
-        #notify-pop p { margin: 5px 0 0; font-weight: bold; color: var(--gold); }
-
-        #menu { 
-            height: 45vh; background: linear-gradient(to top, #000, #001a33); 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 25px; 
-            border-radius: 40px 40px 0 0; border-top: 1px solid rgba(255,255,255,0.2); position: relative; z-index: 1000;
-        }
-        .btn { 
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
-            color: white; border-radius: 25px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
-        }
-        .btn b { font-size: 45px; margin-bottom: 5px; }
-        .btn:active { transform: scale(0.92); background: rgba(255,255,255,0.15); }
-        .btn-gift { background: linear-gradient(45deg, #ff4d4d, #c0392b) !important; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,77,77,0.7); } 70% { box-shadow: 0 0 0 15px rgba(255,77,77,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); } }
-
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: none; padding: 25px; overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .card { background: #0a1122; padding: 15px; border-radius: 20px; text-align: center; border: 1px solid #222; }
-        .card h1 { font-size: 55px; margin: 5px 0; }
-        .buy-btn { width: 100%; border: none; background: var(--gold); padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; color: #000; }
-        .close-btn { float: right; font-size: 40px; color: var(--red); cursor: pointer; }
+        body { margin: 0; background: #001a33; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; color: #fff; }
+        #ui { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 24px; color: #ff4d4d; letter-spacing: 5px; font-weight: bold; text-shadow: 0 0 10px #fff; }
+        #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 50px; }
+        canvas { background: #000b1a; border: 4px solid #fff; border-radius: 15px; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        #controls { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 85px); grid-template-rows: repeat(3, 85px); gap: 12px; }
+        .btn { width: 85px; height: 85px; background: rgba(255,255,255,0.1); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 35px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .btn:active { background: #ff4d4d; transform: scale(0.9); }
+        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+        #overlay, #game-over { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,26,51,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        #game-over { display: none; }
+        .main-btn { padding: 18px 60px; font-size: 22px; background: #ff4d4d; color: #fff; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; letter-spacing: 2px; box-shadow: 0 0 15px #ff4d4d; }
     </style>
 </head>
 <body>
 
-<canvas id="snowCanvas"></canvas>
-
-<div id="notify-pop">
-    <h1 id="notify-emoji">🎅</h1>
-    <p id="notify-text">GIFT COLLECTED!</p>
+<div id="overlay">
+    <h1 style="color: #ff4d4d; letter-spacing: 10px; font-size: 50px; text-shadow: 2px 2px #fff;">R-SANTA</h1>
+    <p style="color: #add8e6; margin-bottom: 30px;">❄️ NEW YEAR ZEN MODE ❄️</p>
+    <button class="main-btn" onclick="startGame()">HO-HO-HO!</button>
 </div>
 
-<div id="top-bar">
-    <div class="rc-panel">💰 <span id="rc-val">100</span> RC</div>
+<div id="game-over">
+    <h1 style="color: #ff4d4d; letter-spacing: 5px; font-size: 40px;">MERRY CHRISTMAS!</h1>
+    <p id="final-score" style="color: #fff; margin-bottom: 20px; font-size: 20px;">Gifts Delivered: 0</p>
+    <button class="main-btn" onclick="resetGame()">PLAY AGAIN</button>
 </div>
 
-<div id="stage">
-    <svg class="tree-svg" viewBox="0 0 200 260">
-        <polygon points="100,10 180,110 20,110" fill="#2ecc71" />
-        <polygon points="100,60 190,170 10,170" fill="#27ae60" />
-        <polygon points="100,110 200,240 0,240" fill="#1e8449" />
-        <rect x="85" y="240" width="30" height="20" fill="#5d4037" />
-        <circle cx="100" cy="10" r="8" fill="#ffd700" />
-    </svg>
-</div>
-
-<div id="menu">
-    <button class="btn" onclick="openModal('shop')"><b>🛒</b>Shop</button>
-    <button class="btn" onclick="openModal('chest')"><b>📦</b>Chest</button>
-    <button class="btn btn-gift" onclick="getGift()"><b>🎁</b>GIFT</button>
-    <button class="btn" onclick="toggleMusic()"><b>🎵</b>Music: <span id="m-status">OFF</span></button>
-</div>
-
-<div id="modal-shop" class="modal">
-    <span class="close-btn" onclick="closeModal()">×</span>
-    <h2 style="color:var(--gold)">Christmas Market</h2>
-    <div class="grid" id="shop-list"></div>
-</div>
-
-<div id="modal-chest" class="modal">
-    <span class="close-btn" onclick="closeModal()">×</span>
-    <h2 style="color:var(--green)">My Decorations</h2>
-    <div class="grid" id="chest-list"></div>
+<div id="game-container">
+    <div id="ui">GIFTS: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="controls">
+        <div class="btn up" onclick="changeDir('up')">▲</div>
+        <div class="btn left" onclick="changeDir('left')">◀</div>
+        <div class="btn right" onclick="changeDir('right')">▶</div>
+        <div class="btn down" onclick="changeDir('down')">▼</div>
+    </div>
 </div>
 
 <script>
-    let db = { rc: 100, inventory: ['⭐'] };
-    let musicOn = false;
-    let audioCtx;
-    let musicLoopTimeout;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
 
-    const shopItems = [
-        {e:'🔴', p:20}, {e:'🔵', p:20}, {e:'🟡', p:20}, {e:'🟢', p:20},
-        {e:'🔔', p:50}, {e:'🍭', p:40}, {e:'❄️', p:60}, {e:'🌟', p:100},
-        {e:'🍦', p:80}, {e:'🍪', p:45}, {e:'🎁', p:150}, {e:'🦌', p:300},
-        {e:'⛄', p:250}, {e:'🎄', p:400}, {e:'🕯️', p:90}, {e:'✨', p:120},
-        {e:'🎀', p:70}, {e:'💎', p:1000}
-    ];
+let grid = 24, count = 0, score = 0, gameActive = false, appleCount = 0;
+let snake = { x: 144, y: 144, dx: grid, dy: 0, cells: [], maxCells: 4 };
+let apple = { x: 96, y: 96 };
+let mega = { active: false, x: 0, y: 0, timer: 0 };
+let snowFlakes = [];
+let audioCtx;
 
-    function notify(emoji, text) {
-        const pop = document.getElementById('notify-pop');
-        document.getElementById('notify-emoji').innerText = emoji;
-        document.getElementById('notify-text').innerText = text;
-        pop.classList.add('active');
-        setTimeout(() => pop.classList.remove('active'), 2500);
-    }
+// --- QOR YOG'ISHI ---
+for(let i=0; i<50; i++) snowFlakes.push({x: Math.random()*400, y: Math.random()*400, r: Math.random()*3+1, d: Math.random()*1});
 
-    function toggleMusic() {
-        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        musicOn = !musicOn;
-        document.getElementById('m-status').innerText = musicOn ? "ON" : "OFF";
-        
-        if(musicOn) {
-            playFullMelody();
-        } else {
-            // Stop music by clearing timeout
-            clearTimeout(musicLoopTimeout);
-        }
-    }
+function initHolidayMusic() {
+    if(audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const playN = (f, v, d) => {
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(v, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + d);
+        o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d);
+    };
+    // Uzluksiz fon
+    setInterval(() => {
+        if(!gameActive) return;
+        // Tinchlantiruvchi "Jingle Bells" notalari (E, E, E...)
+        const notes = [329.63, 329.63, 329.63, 261.63, 392.00]; 
+        playN(notes[Math.floor(Math.random()*notes.length)], 0.02, 4);
+    }, 3000);
+}
 
-    function playNote(freq, dur, startTime) {
-        if(!musicOn && freq > 0) return; // Only play if music is on, except for system sounds
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.start(audioCtx.currentTime + startTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + startTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + startTime + dur);
-        osc.stop(audioCtx.currentTime + startTime + dur);
-    }
+function startGame() {
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('game-over').style.display = 'none';
+    const size = Math.min(window.innerWidth - 40, 360);
+    canvas.width = canvas.height = Math.floor(size / grid) * grid;
+    initHolidayMusic();
+    gameActive = true;
+    requestAnimationFrame(loop);
+}
 
-    function playFullMelody() {
-        if(!musicOn) return;
-        const jingle = [
-            {f:659, d:0.3}, {f:659, d:0.3}, {f:659, d:0.6}, 
-            {f:659, d:0.3}, {f:659, d:0.3}, {f:659, d:0.6}, 
-            {f:659, d:0.3}, {f:783, d:0.3}, {f:523, d:0.3}, {f:587, d:0.3}, {f:659, d:1.0}, 
-            {f:698, d:0.3}, {f:698, d:0.3}, {f:698, d:0.3}, {f:698, d:0.3}, {f:698, d:0.3}, 
-            {f:659, d:0.3}, {f:659, d:0.3}, {f:659, d:0.15}, {f:659, d:0.15}, 
-            {f:783, d:0.3}, {f:783, d:0.3}, {f:698, d:0.3}, {f:587, d:0.3}, {f:523, d:0.8} 
-        ];
-        
-        let time = 0;
-        jingle.forEach(n => {
-            if(musicOn) playNote(n.f, n.d + 0.2, time);
-            time += n.d + 0.05;
-        });
+function resetGame() {
+    score = 0; appleCount = 0; scoreEl.innerHTML = score;
+    snake = { x: 144, y: 144, dx: grid, dy: 0, cells: [], maxCells: 4 };
+    mega.active = false;
+    startGame();
+}
 
-        musicLoopTimeout = setTimeout(() => { 
-            if(musicOn) playFullMelody(); 
-        }, time * 1000 + 1000);
-    }
+function changeDir(dir) {
+    if (dir === 'up' && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+    else if (dir === 'down' && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+    else if (dir === 'left' && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+    else if (dir === 'right' && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+}
 
-    function getGift() {
-        db.rc += 10;
-        updateRC();
-        notify("🎅", "HO-HO-HO! +10 RC");
-        if(audioCtx) playNote(880, 0.2, 0); 
-    }
+function loop() {
+    if(!gameActive) return;
+    requestAnimationFrame(loop);
 
-    function openModal(id) { document.getElementById('modal-' + id).style.display = 'block'; render(id); }
-    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+    if (++count < 38) return; // ULTRA SLOW
+    count = 0;
 
-    function render(id) {
-        let html = '';
-        if(id === 'shop') {
-            shopItems.forEach(i => html += `<div class="card"><h1>${i.e}</h1><p>${i.p} RC</p><button class="buy-btn" onclick="buy('${i.e}', ${i.p})">BUY</button></div>`);
-            document.getElementById('shop-list').innerHTML = html;
-        } else {
-            db.inventory.forEach(i => html += `<div class="card" onclick="placeToy('${i}')"><h1>${i}</h1><p>ADD</p></div>`);
-            document.getElementById('chest-list').innerHTML = html;
-        }
-    }
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    
+    // Qor effektini chizish
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    snowFlakes.forEach(f => {
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fill();
+        f.y += 2; if(f.y > canvas.height) f.y = -10;
+    });
 
-    function buy(e, p) {
-        if(db.rc >= p) {
-            db.rc -= p; db.inventory.push(e);
-            updateRC(); 
-            render('shop');
-            closeModal(); // Option to close shop and show item
-            notify(e, "ITEM PURCHASED!");
-        } else alert("Not enough RC!");
-    }
+    snake.x += snake.dx; snake.y += snake.dy;
+    if (snake.x < 0) snake.x = canvas.width - grid; else if (snake.x >= canvas.width) snake.x = 0;
+    if (snake.y < 0) snake.y = canvas.height - grid; else if (snake.y >= canvas.height) snake.y = 0;
 
-    function placeToy(emoji) {
-        const toy = document.createElement('div');
-        toy.className = 'toy-on-tree';
-        toy.innerText = emoji;
-        toy.style.left = '50%'; toy.style.top = '30%';
-        
-        let isDragging = false;
-        const move = (e) => {
-            if (!isDragging) return;
-            let x = (e.touches ? e.touches[0].clientX : e.clientX);
-            let y = (e.touches ? e.touches[0].clientY : e.clientY);
-            toy.style.left = (x - 25) + 'px';
-            toy.style.top = (y - 25) + 'px';
-        };
-        toy.addEventListener('mousedown', () => isDragging = true);
-        toy.addEventListener('touchstart', () => isDragging = true);
-        window.addEventListener('mouseup', () => isDragging = false);
-        window.addEventListener('touchend', () => isDragging = false);
-        window.addEventListener('mousemove', move);
-        window.addEventListener('touchmove', move);
+    snake.cells.unshift({x: snake.x, y: snake.y});
+    if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-        document.getElementById('stage').appendChild(toy);
-        closeModal();
-    }
+    // SOVG'A (Qizil paket)
+    ctx.fillStyle = '#ff4d4d';
+    ctx.fillRect(apple.x + 4, apple.y + 4, grid - 8, grid - 8);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(apple.x + (grid/2) - 1, apple.y + 4, 2, grid - 8); // Sovg'a tasmasi
 
-    const canvas = document.getElementById('snowCanvas');
-    const ctx = canvas.getContext('2d');
-    let flakes = [];
-    function initSnow() {
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        for(let i=0; i<80; i++) flakes.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*3+1, s:Math.random()*2+1});
-    }
-    function drawSnow() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "white";
+    // MEGA YULDUZ (6-sovg'adan keyin)
+    if(mega.active) {
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowBlur = 20; ctx.shadowColor = '#ffd700';
         ctx.beginPath();
-        flakes.forEach(f => {
-            ctx.moveTo(f.x, f.y);
-            ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
-            f.y += f.s; if(f.y > canvas.height) f.y = -5;
-        });
+        ctx.arc(mega.x + grid/2, mega.y + grid/2, grid * 1.3, 0, Math.PI*2);
         ctx.fill();
-        requestAnimationFrame(drawSnow);
+        ctx.shadowBlur = 0;
+        mega.timer--; if(mega.timer <= 0) mega.active = false;
     }
-    initSnow(); drawSnow();
 
-    function updateRC() { document.getElementById('rc-val').innerText = db.rc; }
-    updateRC();
+    snake.cells.forEach(function(cell, index) {
+        // SANTA ILON (Qizil va oq)
+        ctx.fillStyle = index === 0 ? '#fff' : (index % 2 === 0 ? '#ff4d4d' : '#cc0000');
+        ctx.fillRect(cell.x, cell.y, grid-2, grid-2);
+        
+        if (cell.x === apple.x && cell.y === apple.y) {
+            snake.maxCells++; score++; appleCount++;
+            scoreEl.innerHTML = score;
+            apple.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
+            apple.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
+            
+            if(appleCount >= 6) {
+                mega.x = apple.x; mega.y = apple.y;
+                mega.active = true; mega.timer = 25; appleCount = 0;
+            }
+        }
+
+        if(mega.active && Math.abs(cell.x - mega.x) < grid && Math.abs(cell.y - mega.y) < grid) {
+            score += 5; snake.maxCells += 2; scoreEl.innerHTML = score; mega.active = false;
+        }
+
+        for (let i = index + 1; i < snake.cells.length; i++) {
+            if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+                gameActive = false;
+                document.getElementById('game-over').style.display = 'flex';
+                document.getElementById('final-score').innerHTML = "Gifts Delivered: " + score;
+            }
+        }
+    });
+}
 </script>
 </body>
 </html>
