@@ -3,56 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>R-SNAKE Pro Max Zen</title>
+    <title>R-SANTA: New Year Edition</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; color: #fff; }
-        #ui { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 24px; color: #4CAF50; letter-spacing: 5px; font-weight: bold; }
+        body { margin: 0; background: #001a33; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; color: #fff; }
+        #ui { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 24px; color: #ff4d4d; letter-spacing: 5px; font-weight: bold; text-shadow: 0 0 10px #fff; }
         #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 50px; }
-        
-        /* Kattalashtirilgan o'yin maydoni */
-        canvas { background: #050505; border: 3px solid #1a1a1a; border-radius: 15px; box-shadow: 0 0 40px rgba(76, 175, 80, 0.1); }
-        
+        canvas { background: #000b1a; border: 4px solid #fff; border-radius: 15px; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
         #controls { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 85px); grid-template-rows: repeat(3, 85px); gap: 12px; }
-        .btn { 
-            width: 85px; height: 85px; background: #111; border: 2px solid #333; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 35px; 
-            cursor: pointer; -webkit-tap-highlight-color: transparent; 
-        }
-        .btn:active { background: #4CAF50; color: #000; transform: scale(0.9); }
-        .up { grid-column: 2; grid-row: 1; }
-        .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; }
-        .down { grid-column: 2; grid-row: 3; }
-
-        #overlay, #game-over { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 100; 
-        }
+        .btn { width: 85px; height: 85px; background: rgba(255,255,255,0.1); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 35px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .btn:active { background: #ff4d4d; transform: scale(0.9); }
+        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+        #overlay, #game-over { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,26,51,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
         #game-over { display: none; }
-        .main-btn { padding: 18px 60px; font-size: 22px; background: #4CAF50; color: #000; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; letter-spacing: 2px; }
-        #bonus-msg { position: absolute; top: 45px; color: #FFD700; font-weight: bold; display: none; text-shadow: 0 0 10px #FFD700; }
+        .main-btn { padding: 18px 60px; font-size: 22px; background: #ff4d4d; color: #fff; border: none; border-radius: 40px; cursor: pointer; font-weight: bold; letter-spacing: 2px; box-shadow: 0 0 15px #ff4d4d; }
     </style>
 </head>
 <body>
 
 <div id="overlay">
-    <h1 style="color: #4CAF50; letter-spacing: 15px; font-size: 50px;">R-SNAKE</h1>
-    <p style="color: #555; margin-bottom: 30px;">ULTRA SLOW MEDITATION</p>
-    <button class="main-btn" onclick="startGame()">START ZEN</button>
+    <h1 style="color: #ff4d4d; letter-spacing: 10px; font-size: 50px; text-shadow: 2px 2px #fff;">R-SANTA</h1>
+    <p style="color: #add8e6; margin-bottom: 30px;">❄️ NEW YEAR ZEN MODE ❄️</p>
+    <button class="main-btn" onclick="startGame()">HO-HO-HO!</button>
 </div>
 
 <div id="game-over">
-    <h1 style="color: #ff3333; letter-spacing: 5px; font-size: 40px;">GAME OVER</h1>
-    <p id="final-score" style="color: #fff; margin-bottom: 20px;">Score: 0</p>
-    <button class="main-btn" onclick="resetGame()">RESTART</button>
+    <h1 style="color: #ff4d4d; letter-spacing: 5px; font-size: 40px;">MERRY CHRISTMAS!</h1>
+    <p id="final-score" style="color: #fff; margin-bottom: 20px; font-size: 20px;">Gifts Delivered: 0</p>
+    <button class="main-btn" onclick="resetGame()">PLAY AGAIN</button>
 </div>
 
 <div id="game-container">
-    <div id="ui">SCORE: <span id="score">0</span></div>
-    <div id="bonus-msg">MEGA GOLD SPHERE!</div>
+    <div id="ui">GIFTS: <span id="score">0</span></div>
     <canvas id="gameCanvas"></canvas>
-
     <div id="controls">
         <div class="btn up" onclick="changeDir('up')">▲</div>
         <div class="btn left" onclick="changeDir('left')">◀</div>
@@ -65,33 +47,34 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
-const bonusMsg = document.getElementById('bonus-msg');
 
-let grid = 24; // Kattalashtirilgan kataklar
-let count = 0, score = 0, gameActive = false, appleCount = 0;
+let grid = 24, count = 0, score = 0, gameActive = false, appleCount = 0;
 let snake = { x: 144, y: 144, dx: grid, dy: 0, cells: [], maxCells: 4 };
 let apple = { x: 96, y: 96 };
-let mega = { x: -100, y: -100, active: false, timer: 0 };
+let mega = { active: false, x: 0, y: 0, timer: 0 };
+let snowFlakes = [];
 let audioCtx;
 
-function initMusic() {
+// --- QOR YOG'ISHI ---
+for(let i=0; i<50; i++) snowFlakes.push({x: Math.random()*400, y: Math.random()*400, r: Math.random()*3+1, d: Math.random()*1});
+
+function initHolidayMusic() {
     if(audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const playD = (f, v) => {
+    const playN = (f, v, d) => {
         const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-        o.type = 'sine'; o.frequency.value = f; g.gain.value = v;
-        o.connect(g).connect(audioCtx.destination); o.start();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(v, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + d);
+        o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d);
     };
-    playD(65.4, 0.04); playD(98, 0.02);
+    // Uzluksiz fon
     setInterval(() => {
         if(!gameActive) return;
-        const notes = [261.6, 329.6, 392.0, 523.2];
-        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-        o.frequency.value = notes[Math.floor(Math.random()*notes.length)];
-        g.gain.setValueAtTime(0.015, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 6);
-        o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 6);
-    }, 4500);
+        // Tinchlantiruvchi "Jingle Bells" notalari (E, E, E...)
+        const notes = [329.63, 329.63, 329.63, 261.63, 392.00]; 
+        playN(notes[Math.floor(Math.random()*notes.length)], 0.02, 4);
+    }, 3000);
 }
 
 function startGame() {
@@ -99,18 +82,15 @@ function startGame() {
     document.getElementById('game-over').style.display = 'none';
     const size = Math.min(window.innerWidth - 40, 360);
     canvas.width = canvas.height = Math.floor(size / grid) * grid;
-    initMusic();
+    initHolidayMusic();
     gameActive = true;
     requestAnimationFrame(loop);
 }
 
 function resetGame() {
-    score = 0; appleCount = 0;
-    scoreEl.innerHTML = score;
+    score = 0; appleCount = 0; scoreEl.innerHTML = score;
     snake = { x: 144, y: 144, dx: grid, dy: 0, cells: [], maxCells: 4 };
-    apple = { x: grid*3, y: grid*3 };
     mega.active = false;
-    bonusMsg.style.display = 'none';
     startGame();
 }
 
@@ -125,79 +105,68 @@ function loop() {
     if(!gameActive) return;
     requestAnimationFrame(loop);
 
-    // YANADA SEKINLASHTIRILDI (Ultra Zen)
-    if (++count < 35) return;
+    if (++count < 38) return; // ULTRA SLOW
     count = 0;
 
-    ctx.fillStyle = '#050505';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    
+    // Qor effektini chizish
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    snowFlakes.forEach(f => {
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fill();
+        f.y += 2; if(f.y > canvas.height) f.y = -10;
+    });
 
-    snake.x += snake.dx;
-    snake.y += snake.dy;
-
-    if (snake.x < 0) snake.x = canvas.width - grid;
-    else if (snake.x >= canvas.width) snake.x = 0;
-    if (snake.y < 0) snake.y = canvas.height - grid;
-    else if (snake.y >= canvas.height) snake.y = 0;
+    snake.x += snake.dx; snake.y += snake.dy;
+    if (snake.x < 0) snake.x = canvas.width - grid; else if (snake.x >= canvas.width) snake.x = 0;
+    if (snake.y < 0) snake.y = canvas.height - grid; else if (snake.y >= canvas.height) snake.y = 0;
 
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Kattalashtirilgan Qizil Shar
-    ctx.fillStyle = '#ff3333';
-    ctx.beginPath();
-    ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2.2, 0, Math.PI * 2);
-    ctx.fill();
+    // SOVG'A (Qizil paket)
+    ctx.fillStyle = '#ff4d4d';
+    ctx.fillRect(apple.x + 4, apple.y + 4, grid - 8, grid - 8);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(apple.x + (grid/2) - 1, apple.y + 4, 2, grid - 8); // Sovg'a tasmasi
 
-    // Kattalashtirilgan Mega Oltin Shar
+    // MEGA YULDUZ (6-sovg'adan keyin)
     if(mega.active) {
-        ctx.fillStyle = '#FFD700';
-        ctx.shadowBlur = 25; ctx.shadowColor = '#FFD700';
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowBlur = 20; ctx.shadowColor = '#ffd700';
         ctx.beginPath();
-        ctx.arc(mega.x + grid/2, mega.y + grid/2, grid * 1.3, 0, Math.PI * 2);
+        ctx.arc(mega.x + grid/2, mega.y + grid/2, grid * 1.3, 0, Math.PI*2);
         ctx.fill();
         ctx.shadowBlur = 0;
-        mega.timer--;
-        if(mega.timer <= 0) { mega.active = false; bonusMsg.style.display = 'none'; }
+        mega.timer--; if(mega.timer <= 0) mega.active = false;
     }
 
     snake.cells.forEach(function(cell, index) {
-        // Kattalashtirilgan Ilon
-        ctx.fillStyle = index === 0 ? '#00FF00' : `rgba(0, 255, 0, ${0.8 - index/snake.cells.length})`;
+        // SANTA ILON (Qizil va oq)
+        ctx.fillStyle = index === 0 ? '#fff' : (index % 2 === 0 ? '#ff4d4d' : '#cc0000');
         ctx.fillRect(cell.x, cell.y, grid-2, grid-2);
         
-        // Olma yeyish
         if (cell.x === apple.x && cell.y === apple.y) {
             snake.maxCells++; score++; appleCount++;
             scoreEl.innerHTML = score;
             apple.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
             apple.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
             
-            // 6-olmadan keyin BONUS
             if(appleCount >= 6) {
-                mega.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
-                mega.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
-                mega.active = true;
-                mega.timer = 30; // ~10 soniya sekinlikda
-                bonusMsg.style.display = 'block';
-                appleCount = 0;
+                mega.x = apple.x; mega.y = apple.y;
+                mega.active = true; mega.timer = 25; appleCount = 0;
             }
         }
 
-        // Mega sharni yeyish
         if(mega.active && Math.abs(cell.x - mega.x) < grid && Math.abs(cell.y - mega.y) < grid) {
-            score += 5; snake.maxCells += 2;
-            scoreEl.innerHTML = score;
-            mega.active = false;
-            bonusMsg.style.display = 'none';
+            score += 5; snake.maxCells += 2; scoreEl.innerHTML = score; mega.active = false;
         }
 
-        // To'qnashuv - GAME OVER
         for (let i = index + 1; i < snake.cells.length; i++) {
             if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
                 gameActive = false;
                 document.getElementById('game-over').style.display = 'flex';
-                document.getElementById('final-score').innerHTML = "Final Score: " + score;
+                document.getElementById('final-score').innerHTML = "Gifts Delivered: " + score;
             }
         }
     });
