@@ -5,51 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>R-SNAKE Pro Max</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; touch-action: none; color: #fff; }
-        #ui { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 20px; color: #4CAF50; letter-spacing: 3px; font-weight: bold; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; color: #fff; }
+        #ui { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 22px; color: #4CAF50; letter-spacing: 5px; font-weight: bold; }
         #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 60px; }
+        canvas { background: #080808; border: 2px solid #222; border-radius: 10px; }
         
-        canvas { background: #000; border: 2px solid #1a1a1a; border-radius: 8px; box-shadow: 0 0 15px rgba(76, 175, 80, 0.1); }
-
-        /* Tugmalar blokini to'g'rilash */
-        #controls { 
-            margin-top: 50px; 
-            display: grid; 
-            grid-template-columns: 80px 80px 80px; 
-            grid-template-rows: 80px 80px 80px; 
-            gap: 10px; 
-        }
+        /* D-Pad Layout */
+        #controls { margin-top: 40px; display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); gap: 15px; }
         .btn { 
-            width: 80px; height: 80px; background: #111; border: 2px solid #222; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 28px; 
-            cursor: pointer; -webkit-tap-highlight-color: transparent; transition: 0.2s;
+            width: 80px; height: 80px; background: #111; border: 1px solid #333; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; 
+            cursor: pointer; -webkit-tap-highlight-color: transparent; 
         }
-        .btn:active { background: #333; transform: scale(0.9); border-color: #4CAF50; }
-        
-        /* Tugmalarni o'z o'rniga qo'yish */
+        .btn:active { background: #4CAF50; color: #000; transform: scale(0.9); }
         .up { grid-column: 2; grid-row: 1; }
         .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
         .down { grid-column: 2; grid-row: 3; }
 
-        #overlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 100; 
-        }
-        #play-btn { padding: 15px 50px; font-size: 22px; background: #4CAF50; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; letter-spacing: 2px; }
+        #start-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        button#play-btn { padding: 15px 50px; font-size: 20px; background: #4CAF50; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #bonus-tag { position: absolute; top: 45px; color: #FFD700; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="overlay">
-    <h1 style="color: #4CAF50; letter-spacing: 10px; font-size: 40px;">R-SNAKE</h1>
-    <p style="color: #444; margin-bottom: 30px;">ULTRA SLOW LO-FI EXPERIENCE</p>
-    <button id="play-btn" onclick="startGame()">START</button>
+<div id="start-overlay">
+    <h1 style="color: #4CAF50; letter-spacing: 10px;">R-SNAKE</h1>
+    <p style="color: #666; margin-bottom: 20px;">Ultra Slow Meditation</p>
+    <button id="play-btn" onclick="startGame()">START ZEN</button>
 </div>
 
 <div id="game-container">
     <div id="ui">SCORE: <span id="score">0</span></div>
+    <div id="bonus-tag">GOLDEN SHPERE ACTIVE!</div>
     <canvas id="gameCanvas"></canvas>
 
     <div id="controls">
@@ -64,54 +53,38 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
+const bonusTag = document.getElementById('bonus-tag');
 
-let grid = 20, count = 0, score = 0, gameActive = false;
+let grid = 20, count = 0, score = 0, gameActive = false, appleCount = 0;
 const snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
-const apple = { x: 320, y: 320 };
+const apple = { x: 80, y: 80 }; // Boshlang'ich olma koordinatasi
 const mega = { x: -100, y: -100, active: false, timer: 0 };
-let appleCount = 0;
 let audioCtx;
 
-// --- TO'XTOVSIZ TINCHLANTIRUVCHI MUSIQA ---
 function initZenMusic() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    const playOsc = (freq, vol, type = 'sine') => {
-        const osc = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        osc.type = type; osc.frequency.value = freq;
-        g.gain.value = vol;
-        osc.connect(g).connect(audioCtx.destination);
-        osc.start();
+    const playD = (f, v) => {
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f; g.gain.value = v;
+        o.connect(g).connect(audioCtx.destination); o.start();
     };
-
-    // Deep Background Hum (Zen Atmosphere)
-    playOsc(65.41, 0.04); // C2
-    playOsc(98.00, 0.02); // G2
-
-    // Soft Melody Generator
+    playD(65.4, 0.03); playD(98, 0.02);
     setInterval(() => {
-        if(gameActive) {
-            const scale = [261.63, 329.63, 392.00, 440.00, 523.25]; // C Major
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.frequency.value = scale[Math.floor(Math.random()*scale.length)];
-            g.gain.setValueAtTime(0.015, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 6);
-            o.connect(g).connect(audioCtx.destination);
-            o.start(); o.stop(audioCtx.currentTime + 6);
-        }
+        if(!gameActive) return;
+        const notes = [261, 329, 392, 523];
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.frequency.value = notes[Math.floor(Math.random()*notes.length)];
+        g.gain.setValueAtTime(0.02, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 4);
+        o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 4);
     }, 4000);
 }
 
 function startGame() {
-    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('start-overlay').style.display = 'none';
     const size = Math.min(window.innerWidth - 60, 360);
-    canvas.width = Math.floor(size / grid) * grid;
-    canvas.height = canvas.width; 
-    initZenMusic();
-    gameActive = true;
-    loop();
+    canvas.width = canvas.height = Math.floor(size / grid) * grid;
+    initZenMusic(); gameActive = true; loop();
 }
 
 function changeDir(dir) {
@@ -125,11 +98,12 @@ function loop() {
     if(!gameActive) return;
     requestAnimationFrame(loop);
 
-    // YANADA SEKINLASHTIRILDI (Count < 18)
-    if (++count < 18) return;
+    // ENDI YANADA SEKIN (Zen tezlik)
+    if (++count < 30) return;
     count = 0;
 
-    ctx.fillStyle = '#000';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#080808';
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
     snake.x += snake.dx;
@@ -143,44 +117,56 @@ function loop() {
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Red Apple
-    ctx.fillStyle = '#ff0000';
-    ctx.fillRect(apple.x, apple.y, grid-1, grid-1);
+    // 1. ODDY SHAR (Qizil Olma) - ANIQ CHIZISH
+    ctx.fillStyle = '#FF0000';
+    ctx.beginPath();
+    ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2.5, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Gold Mega Sphere (3x Larger)
+    // 2. MEGA SHAR (Oltin) - HAR 10 TADA CHIQADI
     if(mega.active) {
         ctx.fillStyle = '#FFD700';
+        ctx.shadowBlur = 15; ctx.shadowColor = '#FFD700';
         ctx.beginPath();
-        ctx.arc(mega.x + grid/2, mega.y + grid/2, grid, 0, 7);
+        ctx.arc(mega.x + grid/2, mega.y + grid/2, grid * 1.2, 0, Math.PI * 2);
         ctx.fill();
+        ctx.shadowBlur = 0;
         mega.timer--;
-        if(mega.timer <= 0) mega.active = false;
+        if(mega.timer <= 0) { mega.active = false; bonusTag.style.display = 'none'; }
     }
 
     snake.cells.forEach(function(cell, index) {
-        // Green Gradient Snake
+        // Ilon tanasi (Yashil)
         ctx.fillStyle = index === 0 ? '#00FF00' : `rgba(0, 255, 0, ${0.7 - index/snake.cells.length})`;
         ctx.fillRect(cell.x, cell.y, grid-1, grid-1);
         
+        // Oddiy sharni (olmani) yeyish
         if (cell.x === apple.x && cell.y === apple.y) {
             snake.maxCells++; score++; appleCount++;
             scoreEl.innerHTML = score;
-            apple.x = Math.floor(Math.random() * canvas.width / grid) * grid;
-            apple.y = Math.floor(Math.random() * canvas.height / grid) * grid;
+            // Yangi olma koordinatasi
+            apple.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
+            apple.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
             
             if(appleCount >= 10) {
-                mega.x = apple.x; mega.y = apple.y;
-                mega.active = true; mega.timer = 30; // 5-6 seconds approx
+                mega.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
+                mega.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
+                mega.active = true;
+                mega.timer = 20; // 5-7 soniya ultra sekinlikda
+                bonusTag.style.display = 'block';
                 appleCount = 0;
             }
         }
 
-        if(mega.active && cell.x === mega.x && cell.y === mega.y) {
+        // Mega sharni yeyish
+        if(mega.active && Math.abs(cell.x - mega.x) < grid && Math.abs(cell.y - mega.y) < grid) {
             score += 3; snake.maxCells += 3;
             scoreEl.innerHTML = score;
             mega.active = false;
+            bonusTag.style.display = 'none';
         }
 
+        // O'ziga urilish
         for (let i = index + 1; i < snake.cells.length; i++) {
             if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) location.reload();
         }
