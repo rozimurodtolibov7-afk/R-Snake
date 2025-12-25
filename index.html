@@ -1,134 +1,191 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>R-Snake Perfect</title>
+    <title>R-SNAKE Pro Max</title>
     <style>
-        body { 
-            background: #000; color: #39ff14; font-family: 'Courier New', monospace; 
-            display: flex; flex-direction: column; align-items: center; 
-            margin: 0; padding-top: 10px; overflow: hidden; height: 100vh;
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; touch-action: none; color: #fff; }
+        #ui { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 20px; color: #4CAF50; letter-spacing: 3px; font-weight: bold; }
+        #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 60px; }
+        
+        canvas { background: #000; border: 2px solid #1a1a1a; border-radius: 8px; box-shadow: 0 0 15px rgba(76, 175, 80, 0.1); }
+
+        /* Tugmalar blokini to'g'rilash */
+        #controls { 
+            margin-top: 50px; 
+            display: grid; 
+            grid-template-columns: 80px 80px 80px; 
+            grid-template-rows: 80px 80px 80px; 
+            gap: 10px; 
         }
-        canvas { 
-            background: #050505; border: 4px solid #222; 
-            width: 300px; height: 300px; border-radius: 10px;
+        .btn { 
+            width: 80px; height: 80px; background: #111; border: 2px solid #222; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 28px; 
+            cursor: pointer; -webkit-tap-highlight-color: transparent; transition: 0.2s;
         }
-        #score-board { font-size: 22px; margin-bottom: 5px; }
-        .controls { display: grid; grid-template-columns: repeat(3, 75px); gap: 10px; margin-top: 20px; }
-        .btn {
-            width: 75px; height: 75px; background: #111; border: 2px solid #333;
-            color: #fff; font-size: 30px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            user-select: none; -webkit-tap-highlight-color: transparent;
+        .btn:active { background: #333; transform: scale(0.9); border-color: #4CAF50; }
+        
+        /* Tugmalarni o'z o'rniga qo'yish */
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
+
+        #overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 100; 
         }
-        .btn:active { background: #39ff14; color: #000; }
-        .up { grid-column: 2; } .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+        #play-btn { padding: 15px 50px; font-size: 22px; background: #4CAF50; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
-    <div id="score-board">SCORE: <span id="s">0</span></div>
-    <canvas id="c" width="400" height="400"></canvas>
+<div id="overlay">
+    <h1 style="color: #4CAF50; letter-spacing: 10px; font-size: 40px;">R-SNAKE</h1>
+    <p style="color: #444; margin-bottom: 30px;">ULTRA SLOW LO-FI EXPERIENCE</p>
+    <button id="play-btn" onclick="startGame()">START</button>
+</div>
 
-    <div class="controls">
-        <div class="btn up" onpointerdown="changeDir('U')">▲</div>
-        <div class="btn left" onpointerdown="changeDir('L')">◀</div>
-        <div class="btn right" onpointerdown="changeDir('R')">▶</div>
-        <div class="btn down" onpointerdown="changeDir('D')">▼</div>
+<div id="game-container">
+    <div id="ui">SCORE: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="controls">
+        <div class="btn up" onclick="changeDir('up')">▲</div>
+        <div class="btn left" onclick="changeDir('left')">◀</div>
+        <div class="btn right" onclick="changeDir('right')">▶</div>
+        <div class="btn down" onclick="changeDir('down')">▼</div>
     </div>
+</div>
 
 <script>
-    const cvs = document.getElementById("c"), ctx = cvs.getContext("2d");
-    let b = 20, score = 0, dir = "R", nextDir = "R", musicStarted = false;
-    // Iloncha boshlang'ich holati (bosh va tana orasida masofa bor)
-    let snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
-    let food = {x: 100, y: 100}, bonus = null;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
 
-    // Musiqa
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function startMusic() {
-        if (musicStarted) return; musicStarted = true;
-        const notes = [261.63, 329.63, 392.00, 523.25];
-        let i = 0;
-        setInterval(() => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.frequency.value = notes[i % notes.length];
-            osc.type = 'triangle';
-            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
-            i++;
-        }, 800);
-    }
+let grid = 20, count = 0, score = 0, gameActive = false;
+const snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+const apple = { x: 320, y: 320 };
+const mega = { x: -100, y: -100, active: false, timer: 0 };
+let appleCount = 0;
+let audioCtx;
 
-    function changeDir(newDir) {
-        startMusic();
-        if(newDir == "U" && dir != "D") nextDir = "U";
-        if(newDir == "D" && dir != "U") nextDir = "D";
-        if(newDir == "L" && dir != "R") nextDir = "L";
-        if(newDir == "R" && dir != "L") nextDir = "R";
-    }
+// --- TO'XTOVSIZ TINCHLANTIRUVCHI MUSIQA ---
+function initZenMusic() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const playOsc = (freq, vol, type = 'sine') => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = freq;
+        g.gain.value = vol;
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start();
+    };
 
-    function draw() {
-        dir = nextDir;
-        ctx.fillStyle = "#000"; ctx.fillRect(0,0,400,400);
+    // Deep Background Hum (Zen Atmosphere)
+    playOsc(65.41, 0.04); // C2
+    playOsc(98.00, 0.02); // G2
 
-        // Ilonchani chizish
-        snake.forEach((p, i) => {
-            ctx.fillStyle = i==0 ? "#39ff14" : "#145a14";
-            ctx.fillRect(p.x, p.y, b-1, b-1);
-        });
-
-        // Oddiy ovqat
-        ctx.fillStyle = "red";
-        ctx.fillRect(food.x, food.y, b-2, b-2);
-
-        // Bonus (5 sekund)
-        if(bonus) {
-            ctx.fillStyle = "violet";
-            ctx.fillRect(bonus.x, bonus.y, b, b);
+    // Soft Melody Generator
+    setInterval(() => {
+        if(gameActive) {
+            const scale = [261.63, 329.63, 392.00, 440.00, 523.25]; // C Major
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.frequency.value = scale[Math.floor(Math.random()*scale.length)];
+            g.gain.setValueAtTime(0.015, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 6);
+            o.connect(g).connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + 6);
         }
+    }, 4000);
+}
 
-        let head = {x: snake[0].x, y: snake[0].y};
-        if(dir=="L") head.x -= b; if(dir=="U") head.y -= b;
-        if(dir=="R") head.x += b; if(dir=="D") head.y += b;
+function startGame() {
+    document.getElementById('overlay').style.display = 'none';
+    const size = Math.min(window.innerWidth - 60, 360);
+    canvas.width = Math.floor(size / grid) * grid;
+    canvas.height = canvas.width; 
+    initZenMusic();
+    gameActive = true;
+    loop();
+}
 
-        // Devordan o'tish (Warp)
-        if(head.x < 0) head.x = 380; else if(head.x >= 400) head.x = 0;
-        if(head.y < 0) head.y = 380; else if(head.y >= 400) head.y = 0;
+function changeDir(dir) {
+    if (dir === 'up' && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+    else if (dir === 'down' && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+    else if (dir === 'left' && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+    else if (dir === 'right' && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+}
 
-        // --- TO'QNASHUVNI TEKSHIRISH (MUHIM QISMI) ---
-        // Siklni 1 dan boshlaymiz, shunda boshi bo'yniga tegsa o'lmaydi
-        for(let i = 1; i < snake.length; i++) {
-            if(head.x === snake[i].x && head.y === snake[i].y) {
-                alert("GAME OVER! Score: " + score);
-                location.reload();
-                return;
+function loop() {
+    if(!gameActive) return;
+    requestAnimationFrame(loop);
+
+    // YANADA SEKINLASHTIRILDI (Count < 18)
+    if (++count < 18) return;
+    count = 0;
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    snake.x += snake.dx;
+    snake.y += snake.dy;
+
+    if (snake.x < 0) snake.x = canvas.width - grid;
+    else if (snake.x >= canvas.width) snake.x = 0;
+    if (snake.y < 0) snake.y = canvas.height - grid;
+    else if (snake.y >= canvas.height) snake.y = 0;
+
+    snake.cells.unshift({x: snake.x, y: snake.y});
+    if (snake.cells.length > snake.maxCells) snake.cells.pop();
+
+    // Red Apple
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+    // Gold Mega Sphere (3x Larger)
+    if(mega.active) {
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(mega.x + grid/2, mega.y + grid/2, grid, 0, 7);
+        ctx.fill();
+        mega.timer--;
+        if(mega.timer <= 0) mega.active = false;
+    }
+
+    snake.cells.forEach(function(cell, index) {
+        // Green Gradient Snake
+        ctx.fillStyle = index === 0 ? '#00FF00' : `rgba(0, 255, 0, ${0.7 - index/snake.cells.length})`;
+        ctx.fillRect(cell.x, cell.y, grid-1, grid-1);
+        
+        if (cell.x === apple.x && cell.y === apple.y) {
+            snake.maxCells++; score++; appleCount++;
+            scoreEl.innerHTML = score;
+            apple.x = Math.floor(Math.random() * canvas.width / grid) * grid;
+            apple.y = Math.floor(Math.random() * canvas.height / grid) * grid;
+            
+            if(appleCount >= 10) {
+                mega.x = apple.x; mega.y = apple.y;
+                mega.active = true; mega.timer = 30; // 5-6 seconds approx
+                appleCount = 0;
             }
         }
 
-        if(head.x == food.x && head.y == food.y) {
-            score++; document.getElementById("s").innerText = score;
-            food = {x: Math.floor(Math.random()*20)*b, y: Math.floor(Math.random()*20)*b};
-            if(Math.random() < 0.2) {
-                bonus = {x: Math.floor(Math.random()*20)*b, y: Math.floor(Math.random()*20)*b};
-                setTimeout(() => bonus = null, 5000);
-            }
-        } else if(bonus && head.x == bonus.x && head.y == bonus.y) {
-            score += 3; document.getElementById("s").innerText = score;
-            bonus = null; snake.push({}, {}); 
-        } else {
-            snake.pop();
+        if(mega.active && cell.x === mega.x && cell.y === mega.y) {
+            score += 3; snake.maxCells += 3;
+            scoreEl.innerHTML = score;
+            mega.active = false;
         }
 
-        snake.unshift(head);
-    }
-
-    setInterval(draw, 320); // Tezlik juda qulay (sekin)
+        for (let i = index + 1; i < snake.cells.length; i++) {
+            if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) location.reload();
+        }
+    });
+}
 </script>
 </body>
 </html>
